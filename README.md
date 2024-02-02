@@ -4,7 +4,7 @@
 
 # tarme
 
-`tarme` is a command-line tool for creating and extracting TAR files. It uses the "tar" library, which provides a simple C++ interface to archive multiple files and directories into a TAR format and to extract files from TAR archives.
+`tarme` is a command-line tool for creating and extracting TAR files. It uses the "tarlink" library, which provides a simple C++ interface to archive multiple files and directories into a TAR format and to extract files from TAR archives.
 
 ## Features
 
@@ -25,3 +25,17 @@ Ensure you have a C++17 compatible compiler and CMake installed.
    ```bash
    cmake .. ; make
 
+## How to use tarme
+
+ Creating a TAR archive:
+   ```bash
+   tarme --create <output.tar> <path1> <path2> ...
+path can be either directory or file.
+
+### For example: create a myarchive.tar from directory ./MYFILES
+   ```bash
+   tarme --create myarchive.tar ./MYFILES
+
+### Extracting a TAR archive myarchive.tar into current directory:
+   ```bash
+tarme --extract myarchive.tar .
