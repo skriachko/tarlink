@@ -27,15 +27,22 @@ Ensure you have a C++17 compatible compiler and CMake installed.
 
 ## How to use tarme
 
- Creating a TAR archive:
-   ```bash
+Creating a TAR archive:
+```
    tarme --create <output.tar> <path1> <path2> ...
+```
 path can be either directory or file.
 
-### For example: create a myarchive.tar from directory ./MYFILES
-   ```bash
+### Examples
+#### Create a myarchive.tar from directory ./MYFILES
+```
    tarme --create myarchive.tar ./MYFILES
-
-### Extracting a TAR archive myarchive.tar into current directory:
-   ```bash
+```
+#### Create a myarchive.tar from mydoc.txt, myreport.docx files and ./MYFILES directory
+```
+   tarme --create myarchive.tar mydoc.txt myreport.docx ./MYFILES
+```
+#### Extract a TAR archive myarchive.tar into current directory:
+```
 tarme --extract myarchive.tar .
+```
