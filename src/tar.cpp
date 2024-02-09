@@ -96,49 +96,48 @@ void writeFileContents( std::ofstream& out, const std::string& filename )
 }
 
 
-void processPath( std::ofstream& out, const std::filesystem::path& path, const std::filesystem::path& rootPath )
-{
-    if ( std::filesystem::is_directory( path ) )
-    {
-        for ( const auto& entry : std::filesystem::recursive_directory_iterator(path))
-        {
-            if ( std::filesystem::is_regular_file( entry.path() ) )
-            {
+void processPath(std::ofstream& out, const std::filesystem::path& path, const std::filesystem::path& rootPath) {
+    if (std::filesystem::is_directory(path)) {
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
+            if (std::filesystem::is_regular_file(entry.path())) {
                 struct stat statbuf;
-
-                if ( stat( entry.path().c_str(), &statbuf ) != 0 )
-                {
+                if (stat(entry.path().c_str(), &statbuf) != 0) {
                     std::cerr << "Error getting file info for: " << entry.path() << std::endl;
                     continue;
                 }
 
-                std::string relativePath = std::filesystem::relative( entry.path(), rootPath ).string();
+                auto relativePath = std::filesystem::relative(entry.path(), rootPath).string();
+                // Remove leading "../" from paths
+                size_t pos;
+                while ((pos = relativePath.find("../")) != std::string::npos) {
+                    relativePath.erase(pos, 3);
+                }
 
-                writeTarHeader( out, relativePath.c_str(), statbuf.st_size );
-                writeFileContents( out, entry.path().string() );
+                writeTarHeader(out, relativePath.c_str(), statbuf.st_size);
+                writeFileContents(out, entry.path().string());
             }
         }
-    }
-    else if ( std::filesystem::is_regular_file( path ) )
-    {
+    } else if (std::filesystem::is_regular_file(path)) {
         struct stat statbuf;
-
-        if ( stat( path.c_str(), &statbuf ) != 0 )
-        {
+        if (stat(path.c_str(), &statbuf) != 0) {
             std::cerr << "Error getting file info for: " << path << std::endl;
             return;
         }
 
-        std::string relativePath = std::filesystem::relative( path, rootPath ).string();
+        auto relativePath = std::filesystem::relative(path, rootPath).string();
+        // Remove leading "../" from paths
+        size_t pos;
+        while ((pos = relativePath.find("../")) != std::string::npos) {
+            relativePath.erase(pos, 3);
+        }
 
-        writeTarHeader( out, relativePath.c_str(), statbuf.st_size );
-        writeFileContents( out, path.string() );
-    }
-    else
-    {
+        writeTarHeader(out, relativePath.c_str(), statbuf.st_size);
+        writeFileContents(out, path.string());
+    } else {
         std::cerr << "Invalid file or directory: " << path << std::endl;
     }
 }
+
 
 void createTarFile( const std::string& tarFilename, const std::vector<std::string>& paths )
 {
