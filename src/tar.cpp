@@ -35,25 +35,7 @@
 
 namespace Tar {
 
-
-constexpr uint32_t tar_padding = 512;
-
-
-struct TarHeader
-{
-    char filename[ 100 ];
-    char filemode[ 8 ];
-    char userid[ 8 ];
-    char groupid[ 8 ];
-    char filesize[ 12 ];
-    char mtime[ 12 ];
-    char checksum[ 8 ];
-    char type;
-    char linkedfile[ 100 ];
-    char padding[ 255 ]; // Padding to make the header 512 bytes
-};
-
-void writeTarHeader( std::ofstream& out, const char* filename, size_t filesize )
+void writeTarHeader( std::ofstream& out, const char* filename, size_t filesize, std::time_t lastModifiedTime )
 {
     TarHeader header;
 
@@ -63,7 +45,7 @@ void writeTarHeader( std::ofstream& out, const char* filename, size_t filesize )
     std::sprintf( header.userid, "%07o", 0 );
     std::sprintf( header.groupid, "%07o", 0 );
     std::sprintf( header.filesize, "%011lo", filesize );
-    std::sprintf( header.mtime, "%011lo", 0 );
+    std::sprintf( header.mtime, "%011lo", static_cast<long unsigned int>( lastModifiedTime ) );
     header.type = '0'; // Regular file
 
     // Set checksum field to spaces before calculating checksum
@@ -96,45 +78,78 @@ void writeFileContents( std::ofstream& out, const std::string& filename )
 }
 
 
-void processPath(std::ofstream& out, const std::filesystem::path& path, const std::filesystem::path& rootPath) {
-    if (std::filesystem::is_directory(path)) {
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(path)) {
-            if (std::filesystem::is_regular_file(entry.path())) {
+void processPath( std::ofstream& out, const std::filesystem::path& path, const std::filesystem::path& rootPath )
+{
+    if ( std::filesystem::is_directory( path ) )
+    {
+        for ( const std::filesystem::directory_entry& entry : std::filesystem::recursive_directory_iterator( path ) )
+        {
+            if ( std::filesystem::is_regular_file( entry.path() ) )
+            {
                 struct stat statbuf;
-                if (stat(entry.path().c_str(), &statbuf) != 0) {
-                    std::cerr << "Error getting file info for: " << entry.path() << std::endl;
+
+                if ( stat( entry.path().c_str(), &statbuf ) != 0 )
+                {
+                    std::cerr << "Error getting file info for: " << entry.path() << '\n';
                     continue;
                 }
 
-                auto relativePath = std::filesystem::relative(entry.path(), rootPath).string();
+                std::filesystem::file_time_type ftime = std::filesystem::last_write_time( entry.path() );
+                std::time_t lastModifiedTime = std::chrono::system_clock::to_time_t(
+                    std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+                        ftime - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now()
+                    )
+                );
+
+                std::string relativePath = std::filesystem::relative( entry.path(), rootPath ).string();
+
                 // Remove leading "../" from paths
                 size_t pos;
-                while ((pos = relativePath.find("../")) != std::string::npos) {
-                    relativePath.erase(pos, 3);
+
+                while ( ( pos = relativePath.find( "../" ) ) != std::string::npos )
+                {
+                    relativePath.erase( pos, 3 );
                 }
 
-                writeTarHeader(out, relativePath.c_str(), statbuf.st_size);
-                writeFileContents(out, entry.path().string());
+                writeTarHeader( out, relativePath.c_str(), statbuf.st_size, lastModifiedTime );
+                writeFileContents( out, entry.path().string() );
             }
         }
-    } else if (std::filesystem::is_regular_file(path)) {
+    }
+    else if ( std::filesystem::is_regular_file( path ) )
+    {
         struct stat statbuf;
-        if (stat(path.c_str(), &statbuf) != 0) {
-            std::cerr << "Error getting file info for: " << path << std::endl;
-            return;
-        }
 
-        auto relativePath = std::filesystem::relative(path, rootPath).string();
-        // Remove leading "../" from paths
-        size_t pos;
-        while ((pos = relativePath.find("../")) != std::string::npos) {
-            relativePath.erase(pos, 3);
-        }
+        if ( stat( path.c_str(), &statbuf ) == 0 )
+        {
+            std::filesystem::file_time_type ftime = std::filesystem::last_write_time( path );
+            std::time_t lastModifiedTime = std::chrono::system_clock::to_time_t(
+                std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+                    ftime - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now()
+                )
+            );
 
-        writeTarHeader(out, relativePath.c_str(), statbuf.st_size);
-        writeFileContents(out, path.string());
-    } else {
-        std::cerr << "Invalid file or directory: " << path << std::endl;
+            std::string relativePath = std::filesystem::relative( path, rootPath ).string();
+
+            // Remove leading "../" from paths
+            size_t pos;
+
+            while ( ( pos = relativePath.find( "../" ) ) != std::string::npos )
+            {
+                relativePath.erase( pos, 3 );
+            }
+
+            writeTarHeader( out, relativePath.c_str(), statbuf.st_size, lastModifiedTime );
+            writeFileContents( out, path.string() );
+        }
+        else
+        {
+            std::cerr << "Error getting file info for: " << path << '\n';
+        }
+    }
+    else
+    {
+        std::cerr << "Invalid file or directory: " << path << '\n';
     }
 }
 

@@ -23,12 +23,32 @@
  */
 
 
+#pragma once
+
 #include <string>
 #include <vector>
 
 namespace Tar {
 
-    void createTarFile( const std::string& tarFilename, const std::vector<std::string>& filenames );
-    void extractTarFile( const std::string& tarFilename, const std::string& outputDir );
+constexpr uint32_t tar_padding = 512;
+
+
+struct TarHeader
+{
+    char filename[ 100 ];
+    char filemode[ 8 ];
+    char userid[ 8 ];
+    char groupid[ 8 ];
+    char filesize[ 12 ];
+    char mtime[ 12 ];
+    char checksum[ 8 ];
+    char type;
+    char linkedfile[ 100 ];
+    char padding[ 255 ]; // Padding to make the header 512 bytes
+};
+
+
+void createTarFile( const std::string& tarFilename, const std::vector<std::string>& filenames );
+void extractTarFile( const std::string& tarFilename, const std::string& outputDir );
 
 }
