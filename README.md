@@ -1,3 +1,5 @@
+[![Stand With Ukraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/banner2-direct.svg)](https://stand-with-ukraine.pp.ua)
+
 # tarlink
 
 `tarlink` is a lightweight, easy-to-use C++ library for creating and extracting TAR archives. It offers a straightforward interface for handling TAR files, enabling the archiving of multiple files and directories into a single TAR file, as well as the extraction of contents from TAR archives.
